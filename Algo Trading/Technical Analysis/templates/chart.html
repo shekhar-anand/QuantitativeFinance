@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+<head>
+    <script src="/static/js/anychart-base.min.js"></script>
+    <script src="/static/js/anychart-ui.min.js"></script>
+    <script src="/static/js/anychart-exports.min.js"></script>
+    <script src="/static/js/anychart-stock.min.js"></script>
+    <script src="/static/js/anychart-data-adapter.min.js"></script>
+    <script src="/static/js/anychart-annotations.min.js"></script>
+    <link rel="stylesheet" href="/static/css/anychart-ui.min.css"/>
+    <link rel="stylesheet" href="/static/css/anychart-font.min.css"/>
+
+    <style>
+    html, body, #container {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    </style>
+    <title>Chart</title>>
+</head>
+<body>
+<div id="container"></div>
+<script type="text/javascript">
+
+    // create data table on loaded data
+    var dataTable = anychart.data.table();
+    var data={{chartData|safe}};
+    //console.log(data[0])
+    dataTable.addData(data);
+    //console.log(dataTable)
+
+    //chart parameters
+    var chartParameter = {{chart_params|safe}};
+    //console.log(chartParameter);
+
+    //candle pattern
+    var candle_pattern = {{candle_pattern|safe}};
+    //console.log(candle_pattern);
+
+    //main_chart_proper
+    var main_chart = {{main_chart_properties|safe}};
+    //console.log(main_chart);
+    var chart_name = main_chart[0][1];
+    var chart_start_date = main_chart[1][1];
+    var chart_end_date = main_chart[2][1];
+    var chart_type = main_chart[3][1];
+    //console.log(chart_name,chart_start_date,chart_end_date,chart_type);
+
+    // map loaded data for the ohlc series
+    var mapping = dataTable.mapAs();
+    mapping.addField('open', 1);
+    mapping.addField('high', 2);
+    mapping.addField('low', 3);
+    mapping.addField('close', 4);
+    mapping.addField('value', 4);
+
+    // create stock chart
+    var chart = anychart.stock();
+    // setting chart padding to fit both Y axes
+    chart.padding(10, 50, 20, 50);
+
+    // create first plot on the chart
+    var plot = chart.plot(0);
+    // adding extra Y axis to the right side
+    plot.yAxis(1).orientation('right');
+
+    // create candlestick series
+    plot[chart_type](mapping).name(chart_name);
+    var mapping_volume = dataTable.mapAs();
+    mapping_volume.addField('volume', 5);
+    mapping_volume.addField('value', 5);
+
+   var k;
+    for (k = 0; k < candle_pattern.length; k++)
+    {
+        var candle_pattern_date = candle_pattern[k][0];
+        var candle_pattern_value = candle_pattern[k][1];
+        var candle_pattern_text = candle_pattern[k][2];
+        //console.log(candle_pattern_date,candle_pattern_value,candle_pattern_text);
+
+        // create annotation
+        var annotation = plot.annotations();
+
+        // create first marker annotation and set settings
+        annotation.marker()
+            .xAnchor(candle_pattern_date)
+            .valueAnchor(candle_pattern_value)
+            .stroke('2 #F44336')
+            .markerType('arrow-down')
+            .offsetX(30)
+            .offsetY(-20)
+            .allowEdit(false);
+        // create first label annotation and set settings
+        annotation.label()
+            .xAnchor(candle_pattern_date)
+            .valueAnchor(candle_pattern_value)
+            .anchor('left-top')
+            .offsetX(25)
+            .offsetY(-50)
+            .padding(6)
+            .text(candle_pattern_text)
+            .fontColor('#fff')
+            .background({
+                fill: 'red 0.75',
+                stroke: '0.5 #455a64',
+                corners: 7
+            })
+            .allowEdit(false);
+     }
+
+
+
+  var i;
+    for (i = 6; i < data[0].length; i++) {
+        var semi_chartParameter = chartParameter[i];
+        var semi_chart_split = semi_chartParameter.split("^");
+        var semi_chart_type = semi_chart_split[0];
+        var semi_chart_plot = semi_chart_split[1];
+        var semi_chart_name = semi_chart_split[2];
+
+        var mapping01 = dataTable.mapAs();
+        mapping01.addField('value', i);
+        var plot = chart.plot(semi_chart_plot);
+        if(semi_chart_plot>0){
+        plot.height('25%');
+        }
+        var plo_ = plot[semi_chart_type](mapping01);
+        plo_.name(semi_chart_name);
+        plot.yAxis(1).orientation('right');
+    }
+
+    // create scroller series with mapped data
+    chart.scroller().line(mapping_volume);
+    // set container id for the chart
+    chart.container('container');
+    // initiate chart drawing
+    chart.draw();
+
+    // create range picker
+    var rangePicker = anychart.ui.rangePicker();
+    // init range picker
+    rangePicker.render(chart);
+
+    // create range selector
+    var rangeSelector = anychart.ui.rangeSelector();
+    // init range selector
+    rangeSelector.render(chart);
+
+
+
+</script>
+</body>
+</html>
+
